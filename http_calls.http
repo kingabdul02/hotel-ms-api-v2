@@ -1,0 +1,333 @@
+POST http://localhost:8000/api/auth/login HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+    "email": "admin@hotelms.com",
+    "password": "password"
+}
+
+###
+POST http://localhost:8000/api/auth/register HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "kingabdul02@yahoo.com",
+  "password": "password",
+  "password_confirmation": "password",
+  "name": "Abdulrasheed A.",
+  "phone": "08066789669",
+  "address": "No. 7 Wuye, Abuja",
+  "role": "Guest"
+}
+
+###
+GET http://localhost:8000/api/guest/my-profile HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 5|lEqOprymDxdgbbVnx2OWTltYSUSj6fGPkkXhCE2z2792bb12
+
+###
+POST http://localhost:8000/api/guest/update-profile HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 5|lEqOprymDxdgbbVnx2OWTltYSUSj6fGPkkXhCE2z2792bb12
+
+{
+    "phone": "09099887777",
+    "password": "123456789",
+    "password_confirmation": "123456789"
+}
+
+###
+GET http://localhost:8000/api/room/search?&check_in_date=2024-06-04 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/get-room-types HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/rooms
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/rooms/1
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/room/type/1
+Content-Type: application/json
+Accept: application/json
+
+###
+POST http://localhost:8000/api/guest/book-room HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 6|4LsfUa6LNvIlqdMZuHHSqMW8RZJX3lo8YihdjzJt87b53ea0
+
+{
+  "room_id": 3,
+  "check_in_date": "2024-05-25",
+  "check_out_date": "2024-05-20",
+  "special_requests": "None",
+  "no_of_guests": "2"
+}
+
+###
+POST http://localhost:8000/api/make-payment/608649 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|nbrZhDMlrMopVejbHrz7qxJqpUbTsST9cNpsUUj9255ffefd
+
+###
+POST http://localhost:8000/api/guest/cancelation-requests HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 3|GO30JTRjXWIvs8sLeqrCs24zIm2IXxEIDvTTC3Bw20bdd894
+
+{
+    "booking_id": 47576
+}
+
+###
+POST http://localhost:8000/api/admin/process-cancelation-request/2 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 3|GO30JTRjXWIvs8sLeqrCs24zIm2IXxEIDvTTC3Bw20bdd894
+
+{
+    "status": "approved"
+}
+
+###
+GET http://localhost:8000/api/guest/get-booking/608649 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|nbrZhDMlrMopVejbHrz7qxJqpUbTsST9cNpsUUj9255ffefd
+
+###
+POST http://localhost:8000/api/guest/saved-bookings HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 4|ITGTb4m7oIbsR2WCqLQnWIl9CcR76OQxpWbeJEgXb8a4fb5c
+
+{
+    "booking_id": 1
+}
+
+###
+GET http://localhost:8000/api/guest/saved-bookings/1 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 4|ITGTb4m7oIbsR2WCqLQnWIl9CcR76OQxpWbeJEgXb8a4fb5c
+
+{
+    "booking_id": 1
+}
+
+### use
+POST http://localhost:8000/api/admin/purchase-orders
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+{
+    "supplier_id": 1,
+    "order_date": "2024-05-18",
+    "items": [
+        {
+            "item_id": 1,
+            "quantity": 10,
+            "unit_price": 20.00
+        },
+        {
+            "item_id": 2,
+            "quantity": 5,
+            "unit_price": 50.00
+        }
+    ]
+}
+
+
+### use
+GET http://localhost:8000/api/admin/purchase-orders
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 7|Md1zUT40vAKUpBzrZiqdGIob1OFHnzitoFEolSsc990bf2e2
+
+### use
+POST http://localhost:8000/api/admin/inventory-movements
+Content-Type: application/json
+Accept: application/jsonphp
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+{
+    "item_id": 1,
+    "transaction_type": "IN",
+    "quantity": 5,
+    "transaction_date": "2024-05-18",
+    "remarks": "Received new stock"
+}
+
+###
+POST http://localhost:8000/api/admin/department-requests
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+{
+    "department_id": 1,
+    "item_id": 1,
+    "quantity": 2
+}
+
+###
+POST http://localhost:8000/api/admin/process-department-request/5
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+{
+    "status": "Approved",
+    "approved_quantity": 3
+}
+
+###
+GET http://localhost:8000/api/room-types
+Content-Type: application/json
+Accept: application/json
+
+###
+POST http://localhost:8000/api/admin/room-types
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|m370BcyxfBRUFyyD2HbFBeUTicpnwrfsM0V228P0ae1aa313
+
+{
+    "name": "Standard",
+    "description": "Standard affordable room",
+    "image_url": "standard_room.png",
+    "chart_color_code": "#FFGGFFs"
+}
+
+###
+POST http://localhost:8000/api/admin/rooms
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|m370BcyxfBRUFyyD2HbFBeUTicpnwrfsM0V228P0ae1aa313
+
+{
+    "name": "A1",
+    "room_type_id": 1,
+    "price": 10000,
+    "no_of_guests": 2,
+    "no_of_bedrooms": 1,
+    "no_of_beds": 1,
+    "no_of_baths": 1,
+    "images": [
+        {
+            "url": "image1.png"
+        },
+        {
+            "url": "image2.png"
+        },
+        {
+            "url": "image3.png"
+        }
+    ]
+}
+
+###
+GET http://localhost:8000/api/rooms
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/rooms/2
+Content-Type: application/json
+Accept: application/json
+
+###
+GET http://localhost:8000/api/admin/check-in-booking/608649 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|nbrZhDMlrMopVejbHrz7qxJqpUbTsST9cNpsUUj9255ffefd
+
+###
+GET http://localhost:8000/api/admin/check-out-booking/2 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 3|g4lSoi4AYvgRYy4QsNefmmPNzTKFrmL8ig8e1vfg7948a2ea
+
+###
+GET http://localhost:8000/api/admin/statistics/booking
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|WcUTMKik8uoxoPMulk0GOiTZ4pT1r1Nuvx9ca9bU6d619a0d
+
+###
+GET http://localhost:8000/api/admin/statistics/inventory
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 11|CHqgPabBE1G3j3ExEN6ohwkuBxfXkExNC9wo1tPYa97774c9
+
+###
+GET http://localhost:8000/api/admin/items
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+###
+GET http://localhost:8000/api/admin/inventories
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 10|pcDEYnPpd81Xh7jI7cNzSFt5l018nbzJmGnF4G1h8ed5cd48
+
+###
+POST http://localhost:8000/api/send-mail HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 5|lEqOprymDxdgbbVnx2OWTltYSUSj6fGPkkXhCE2z2792bb12
+
+{
+    "name": "kingabdul",
+    "email": "kingabdul02@gmail.com",
+    "comment": "Testing contact form from NBTE site."
+}
+
+
+###
+GET http://localhost:8000/api/admin/users
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 11|CHqgPabBE1G3j3ExEN6ohwkuBxfXkExNC9wo1tPYa97774c9
+
+###
+GET http://localhost:8000/api/admin/activate-user/2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|ovSfsMvRJCkuJ29aPYA6jzNu5ZLTx0GIKBFmOqXBa004192c
+
+###
+GET http://localhost:8000/api/admin/dedactivate-user/5
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 11|CHqgPabBE1G3j3ExEN6ohwkuBxfXkExNC9wo1tPYa97774c9
+
+###
+POST http://localhost:8000/api/admin/use-inventory
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 4|NK011mLpsgOGgXFAaFLtouhH89SRiy1WyWadBlBV31d105ad
+
+{
+    "item_id": 13,
+    "quantity": 1,
+    "remarks": "used item 1"
+}
