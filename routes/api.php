@@ -105,6 +105,20 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
                 Route::get('inventory', [StatisticCotroller::class, 'getInventoryStats']);
             });
+
+            Route::prefix('corporate-booking')->group(function () {
+                Route::get('/', [BookingController::class, 'listCorporateBookings']);
+
+                Route::post('/', [BookingController::class, 'corporateBooking']);
+
+                Route::post('/guest/{guest_id}/check-in', [BookingController::class, 'checkInCorporateGuest']);
+
+                Route::post('/guest/{guest_id}/check-out', [BookingController::class, 'checkOutCorporateGuest']);
+
+                Route::get('/billing-report', [BookingController::class, 'generateBillingReport']);
+
+                Route::get('/bill/{reservation_code}', [BookingController::class, 'generateCorporateBill']);
+            });
         });
     });
 
@@ -127,15 +141,11 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
     });
 
     Route::prefix('manager')->group(function () {
-        Route::group(['middleware' => ['role:Manager']], function () {
-
-        });
+        Route::group(['middleware' => ['role:Manager']], function () {});
     });
 
     Route::prefix('staff')->group(function () {
-        Route::group(['middleware' => ['role:Staff']], function () {
-
-        });
+        Route::group(['middleware' => ['role:Staff']], function () {});
     });
 
     Route::get('my-notifications', [InAppNotificationController::class, 'getMyNotification']);
@@ -175,7 +185,7 @@ Route::apiResource('room-images', App\Http\Controllers\RoomImageController::clas
 
 Route::get('get-room-types', [RoomTypeController::class, 'getRoomType']);
 
-Route::post('send-mail', function(Request $request) {
+Route::post('send-mail', function (Request $request) {
     $data = [
         'name' => $request->input('name'),
         'email' => $request->input('email'),

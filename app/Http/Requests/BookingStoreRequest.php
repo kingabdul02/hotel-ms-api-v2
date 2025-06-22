@@ -22,10 +22,10 @@ class BookingStoreRequest extends FormRequest
         return [
             // 'user_id' => ['required', 'integer', 'exists:users,id'],
             'room_id' => ['required', 'integer', 'exists:rooms,id'],
-            'check_in_date' => ['required', 'date'],
-            'check_out_date' => ['required', 'date'],
+            'check_in_date' => ['required', 'date', 'after_or_equal:today'],
+            'check_out_date' => ['required', 'date', 'after:check_in_date'],
             'special_requests' => ['nullable', 'string'],
-            'no_of_guests' => ['required', 'string'],
+            'no_of_guests' => ['required', 'integer', 'min:1'],
         ];
     }
 }

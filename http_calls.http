@@ -331,3 +331,76 @@ Authorization: Bearer 4|NK011mLpsgOGgXFAaFLtouhH89SRiy1WyWadBlBV31d105ad
     "quantity": 1,
     "remarks": "used item 1"
 }
+
+###
+POST http://localhost:8000/api/admin/corporate-booking HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|U0aPWxdKlCQMlBgSZhasmEvWYu6eBuK79aYUyEW983ba178b
+
+{
+  "is_new_company": true,
+  "check_in_date": "2025-06-10",
+  "check_out_date": "2025-06-13",
+  "company_id": 1,
+  "company": {
+    "name": "Tech Innovations Ltd",
+    "address": "123 Tech Street, Lagos",
+    "phone": "+2348098765432",
+    "email": "info@techinnovations.com"
+    },
+  "coordinator": {
+    "full_name": "John Doe",
+    "email": "john.doe@company.com",
+    "phone": "+2348123456789",
+    "nin": "34812346789",
+    "id_card_file": "34812346789"
+  },
+  "guests": [
+    {
+      "full_name": "Jane Smith",
+      "email": "jane.smith@company.com",
+      "phone": "+2348011122233",
+      "room_id": 1,
+      "gender": "Female"
+    },
+    {
+      "full_name": "Mark Johnson",
+      "email": "mark.johnson@company.com",
+      "phone": "+2348077788899",
+      "room_id": 2,
+      "gender": "Male"
+    }
+  ]
+}
+
+###
+GET http://localhost:8000/api/admin/corporate-booking HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|U0aPWxdKlCQMlBgSZhasmEvWYu6eBuK79aYUyEW983ba178b
+
+
+###
+POST http://localhost:8000/api/admin/corporate-booking/guest/1/check-in HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|cJVBR770sdHmwNomii1u3GIIYLgIamLsDLPoyjIx16568393
+
+###
+POST http://localhost:8000/api/admin/corporate-booking/guest/1/check-out HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|cJVBR770sdHmwNomii1u3GIIYLgIamLsDLPoyjIx16568393
+
+###
+GET http://localhost:8000/api/admin/corporate-booking/billing-report HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|U0aPWxdKlCQMlBgSZhasmEvWYu6eBuK79aYUyEW983ba178b
+
+###
+GET http://localhost:8000/api/admin/corporate-booking/bill/296838 HTTP/1.1
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 1|U0aPWxdKlCQMlBgSZhasmEvWYu6eBuK79aYUyEW983ba178b
