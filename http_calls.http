@@ -54,6 +54,11 @@ Accept: application/json
 GET http://localhost:8000/api/rooms
 Content-Type: application/json
 Accept: application/json
+###
+
+GET http://localhost:8000/api/halls
+Content-Type: application/json
+Accept: application/json
 
 ###
 GET http://localhost:8000/api/rooms/1

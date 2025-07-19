@@ -187,6 +187,8 @@ Route::apiResource('rooms', App\Http\Controllers\RoomController::class)->only('i
 
 Route::apiResource('facilities', App\Http\Controllers\FacilityController::class);
 
+Route::apiResource('halls', App\Http\Controllers\HallController::class);
+
 Route::apiResource('room-images', App\Http\Controllers\RoomImageController::class);
 
 Route::get('get-room-types', [RoomTypeController::class, 'getRoomType']);
