@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CorporateBookingRequest extends FormRequest
+class CorporateBookingUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,7 +21,6 @@ class CorporateBookingRequest extends FormRequest
     {
         $rules = [
             'is_new_company' => 'boolean',
-            'company_id' => 'required_if:is_new_company,false',
             'coordinator.full_name' => 'required|string',
             'coordinator.email' => 'required|email',
             'coordinator.phone' => 'required|string',

@@ -13,6 +13,8 @@ class CorporateBookingResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'reservation_code' => $this->reservation_code,
+            'expected_guests' => $this->expected_guests,
             'company' => new CompanyResource($this->whenLoaded('company')),
             'coordinator' => new CoordinatorResource($this->whenLoaded('coordinator')),
             'mealPlan' => new MealPlanResource($this->whenLoaded('mealPlan')),

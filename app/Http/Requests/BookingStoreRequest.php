@@ -20,12 +20,13 @@ class BookingStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'user_id' => ['required', 'integer', 'exists:users,id'],
+            'guest_name' => ['nullable', 'string'],
             'room_id' => ['required', 'integer', 'exists:rooms,id'],
             'check_in_date' => ['required', 'date', 'after_or_equal:today'],
             'check_out_date' => ['required', 'date', 'after:check_in_date'],
             'special_requests' => ['nullable', 'string'],
             'no_of_guests' => ['required', 'integer', 'min:1'],
+            'is_online_booking' => ['nullable', 'boolean'],
         ];
     }
 }

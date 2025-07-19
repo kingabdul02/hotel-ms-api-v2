@@ -31,6 +31,8 @@ class Booking extends Model
         'no_of_guests',
         'no_of_nights',
         'booking_id',
+        'guest_name',
+        'is_online_booking',
     ];
 
     /**

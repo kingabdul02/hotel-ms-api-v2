@@ -24,6 +24,7 @@ use App\Models\CorporateBooking;
 use App\Models\CorporateBookingGuest;
 use App\Models\Company;
 use App\Http\Requests\CorporateBookingRequest;
+use App\Http\Requests\CorporateBookingUpdateRequest;
 use App\Http\Resources\CorporateBookingResource;
 
 class BookingController extends Controller
@@ -55,8 +56,6 @@ class BookingController extends Controller
             $checkIn = Carbon::parse($request->check_in_date);
             $checkOut = Carbon::parse($request->check_out_date);
 
-            Log::alert($checkIn);
-            Log::alert($checkOut);
             // Calculate the difference in days
             $numberOfNights = $checkIn->diffInDays($checkOut);
 
@@ -375,6 +374,10 @@ class BookingController extends Controller
             'guests.room',
         ])->where('reservation_code', $reservation_code)->first();
 
+        if (! $booking) {
+            return $this->error('No booking found with reservation code: ' . $reservation_code, 404);
+        }
+
         $nights = Carbon::parse($booking->check_in_date)->diffInDays($booking->check_out_date);
         $guestSummaries = [];
         $totalRoomCost = 0;
@@ -416,5 +419,87 @@ class BookingController extends Controller
             'total_accommodation' => $totalRoomCost,
             'grand_total' => $total,
         ]);
+    }
+
+    public function getCorporateBookingDetails($corporate_booking_id)
+    {
+        $booking = CorporateBooking::with(['company', 'coordinator', 'guests.room', 'mealPlan'])
+            ->findOrFail($corporate_booking_id);
+
+        return new CorporateBookingResource($booking);
+    }
+
+    public function updateCorporateBooking(CorporateBookingUpdateRequest $request, $corporate_booking_id)
+    {
+        try {
+            DB::transaction(function () use ($request, $corporate_booking_id) {
+                $booking = CorporateBooking::with(['guests', 'coordinator', 'company'])->findOrFail($corporate_booking_id);
+
+                // Update or fetch company
+                if ($request->is_new_company) {
+                    $company = $booking->company;
+                    $company->update([
+                        'name' => $request->company['name'],
+                        'email' => $request->company['email'],
+                        'phone' => $request->company['phone'],
+                        'address' => $request->company['address'],
+                    ]);
+                } else {
+                    $company = Company::where('registration_number', $request->registration_number)->first();
+                    if (!$company) {
+                        throw new Exception('Company not found');
+                    }
+
+                    $booking->company_id = $company->id;
+                }
+
+                // Update coordinator
+                $coordinator = $booking->coordinator;
+                $coordinator->update([
+                    'company_id' => $company->id,
+                    'full_name' => $request->coordinator['full_name'],
+                    'email' => $request->coordinator['email'],
+                    'phone' => $request->coordinator['phone'],
+                    'nin' => $request->coordinator['nin'],
+                    'id_card_file' => $request->coordinator['id_card_file'],
+                ]);
+
+                // Update booking
+                $booking->update([
+                    'check_in_date' => $request->check_in_date,
+                    'check_out_date' => $request->check_out_date,
+                    'meal_plan_id' => $request->meal_plan_id,
+                    'company_id' => $company->id,
+                    'coordinator_id' => $coordinator->id,
+                ]);
+
+                // Remove old guests and re-insert new ones
+                $booking->guests()->delete();
+
+                foreach ($request->guests as $guest) {
+                    CorporateBookingGuest::create([
+                        'corporate_booking_id' => $booking->id,
+                        'room_id' => $guest['room_id'],
+                        'full_name' => $guest['full_name'],
+                        'gender' => $guest['gender'] ?? null,
+                        'email' => $guest['email'] ?? null,
+                        'phone' => $guest['phone'] ?? null,
+                    ]);
+                }
+
+                $booking->expected_guests = $request->expected_guests ? $request->expected_guests : $request->guests->count();
+
+                // Recalculate total amount
+                $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
+                $mealPlan = $booking->mealPlan()->first();
+                $mealCost = $mealPlan ? ($mealPlan->price_per_day * $nights * $booking->guests()->count()) : 0;
+                $booking->update(['total_amount' => $mealCost]);
+            });
+
+            return $this->success('Corporate booking updated successfully');
+        } catch (Exception $e) {
+            Log::error('Corporate booking update failed: ' . $e->getMessage());
+            return $this->error($e->getMessage(), 400);
+        }
     }
 }

@@ -18,12 +18,14 @@ class CorporateBooking extends Model
         'total_amount',
         'status',
         'reservation_code',
+        'expected_guests'
     ];
 
     protected $casts = [
         'check_in_date' => 'datetime',
         'check_out_date' => 'datetime',
         'total_amount' => 'decimal:2',
+        'expected_guests' => 'integer'
     ];
 
     public function guests()

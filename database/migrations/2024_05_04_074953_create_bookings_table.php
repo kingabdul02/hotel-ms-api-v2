@@ -21,13 +21,15 @@ return new class extends Migration
             $table->date('check_out_date');
             $table->text('special_requests')->nullable();
             $table->float('total_amount');
-            $table->enum('payment_status', ["pending","paid","cancelled", "refunded"])->default('pending');
+            $table->enum('payment_status', ["pending", "paid", "cancelled", "refunded"])->default('pending');
             $table->boolean('is_confirmed')->default(true);
             $table->boolean('is_checked_in')->default(false);
             $table->boolean('is_checked_out')->default(false);
             $table->string('no_of_guests');
             $table->string('no_of_nights');
             $table->string('booking_id')->unique();
+            $table->string('guest_name')->nullable();
+            $table->boolean('is_online_booking')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

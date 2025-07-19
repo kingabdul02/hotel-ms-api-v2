@@ -18,13 +18,18 @@ class StatisticCotroller extends Controller
 {
     public function getBookingStats(Request $request)
     {
-        // Calculate the date 8 months ago from today
         $eightMonthsAgo = Carbon::now()->subMonths(8);
         $twoDaysAgo = Carbon::yesterday()->subDay(1);
         $yesterday = Carbon::yesterday();
         $today = Carbon::today();
 
-        // Query to get total booking revenue by room types for the last 8 months where payment_status is paid
+        // Search/filter inputs
+        $search = $request->input('search');
+        $roomTypeId = $request->input('room_type_id');
+        $checkInDate = $request->input('check_in_date');
+        $checkOutDate = $request->input('check_out_date');
+
+        // Revenue by room type
         $totalRevenueByRoomType = Booking::join('rooms', 'bookings.room_id', '=', 'rooms.id')
             ->join('room_types', 'rooms.room_type_id', '=', 'room_types.id')
             ->whereBetween('bookings.check_in_date', [$eightMonthsAgo, Carbon::now()])
@@ -34,66 +39,79 @@ class StatisticCotroller extends Controller
             ->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
             ->get()
-            ->groupBy(function ($date) {
-                return Carbon::createFromDate($date->year, $date->month, 1)->format('F Y');
-            });
+            ->groupBy(fn($date) => Carbon::createFromDate($date->year, $date->month, 1)->format('F Y'));
 
-        // Calculate the date 8 months ago from today
-        $eightMonthsAgo = Carbon::now()->subMonths(8);
-
-        // Query to get check-ins and check-outs by month
+        // Check-in / Check-out stats
         $checkInCheckOutStats = Booking::whereBetween('check_in_date', [$eightMonthsAgo, Carbon::now()])
             ->orWhereBetween('check_out_date', [$eightMonthsAgo, Carbon::now()])
             ->selectRaw('
-        YEAR(check_in_date) as year,
-        MONTH(check_in_date) as month,
-        COUNT(CASE WHEN check_in_date IS NOT NULL THEN 1 END) as total_bookings,
-        SUM(CASE WHEN is_checked_in = 1 THEN 1 ELSE 0 END) as confirmed_check_ins,
-        SUM(CASE WHEN is_checked_out = 1 THEN 1 ELSE 0 END) as confirmed_check_outs
-    ')
+            YEAR(check_in_date) as year,
+            MONTH(check_in_date) as month,
+            COUNT(CASE WHEN check_in_date IS NOT NULL THEN 1 END) as total_bookings,
+            SUM(CASE WHEN is_checked_in = 1 THEN 1 ELSE 0 END) as confirmed_check_ins,
+            SUM(CASE WHEN is_checked_out = 1 THEN 1 ELSE 0 END) as confirmed_check_outs
+        ')
             ->groupBy('year', 'month')
             ->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
             ->get()
-            ->groupBy(function ($date) {
-                return Carbon::createFromDate($date->year, $date->month, 1)->format('F Y');
-            });
+            ->groupBy(fn($date) => Carbon::createFromDate($date->year, $date->month, 1)->format('F Y'));
 
-        // Query to get actual check-ins and check-outs for the day
-        $checkInsToday = Booking::where('check_in_date', $today)
+        // Today stats
+        $checkInsToday = Booking::whereDate('check_in_date', $today)
             ->where('is_checked_in', true)
             ->count();
 
-        $checkOutsToday = Booking::where('check_out_date', $today)
+        $checkOutsToday = Booking::whereDate('check_out_date', $today)
             ->where('is_checked_out', true)
             ->count();
 
-        // Query to get expected check-ins and check-outs for the day
-        $expectedCheckIns = Booking::where('check_in_date', $today)
+        $expectedCheckIns = Booking::whereDate('check_in_date', $today)
             ->where('is_checked_in', false)
             ->count();
 
-        $expectedCheckOuts = Booking::where('check_out_date', $today)
+        $expectedCheckOuts = Booking::whereDate('check_out_date', $today)
             ->where('is_checked_out', false)
             ->count();
 
         $availableRoomCount = Room::where('is_available', true)->count();
 
-        // Query to get bookings for the last two days
-        $recentBookings = Booking::with('room', 'user')
-            ->whereBetween('check_in_date', [$twoDaysAgo, $today])
-            ->orWhereBetween('check_out_date', [$twoDaysAgo, $today])
-            ->get();
+        // Bookings with search and filters
+        $recentBookingsQuery = Booking::with('room', 'user');
+
+        if ($search) {
+            $recentBookingsQuery->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%");
+            })->orWhereHas('room', function ($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($roomTypeId) {
+            $recentBookingsQuery->whereHas('room', function ($q) use ($roomTypeId) {
+                $q->where('room_type_id', $roomTypeId);
+            });
+        }
+
+        if ($checkInDate) {
+            $recentBookingsQuery->whereDate('check_in_date', $checkInDate);
+        }
+
+        if ($checkOutDate) {
+            $recentBookingsQuery->whereDate('check_out_date', $checkOutDate);
+        }
+
+        $recentBookings = $recentBookingsQuery->orderBy('check_in_date', 'desc')->paginate(100);
 
         return response()->json([
-            'totalRevenueByRoomType' => $totalRevenueByRoomType,
-            'checkInCheckOutStats' => $checkInCheckOutStats,
-            'checkInsToday' => $checkInsToday,
-            'checkOutsToday' => $checkOutsToday,
-            'expectedCheckInsToday' => $expectedCheckIns,
-            'expectedCheckOutsToday' => $expectedCheckOuts,
-            'availableRoomCount' => $availableRoomCount,
-            'recentBookings' => $recentBookings,
+            'totalRevenueByRoomType'   => $totalRevenueByRoomType,
+            'checkInCheckOutStats'     => $checkInCheckOutStats,
+            'checkInsToday'            => $checkInsToday,
+            'checkOutsToday'           => $checkOutsToday,
+            'expectedCheckInsToday'    => $expectedCheckIns,
+            'expectedCheckOutsToday'   => $expectedCheckOuts,
+            'availableRoomCount'       => $availableRoomCount,
+            'recentBookings'           => $recentBookings,
         ]);
     }
 
@@ -109,21 +127,21 @@ class StatisticCotroller extends Controller
             ->orderBy('total_quantity_used', 'DESC')
             ->get();
 
-            $lowStockItems = Item::with('inventory')
-                ->whereHas('inventory', function (Builder $query) {
+        $lowStockItems = Item::with('inventory')
+            ->whereHas('inventory', function (Builder $query) {
                 $query->whereColumn('quantity', '<', 'items.reorder_level')
                     ->where('quantity', '>', 0);
             })->get();
 
 
         $outOfStockItems = Item::with('inventory', 'category')
-            ->whereHas('inventory', function(Builder $query) {
+            ->whereHas('inventory', function (Builder $query) {
                 $query->where('quantity', '=', 0);
             })->get();
 
-            $statistics = Category::with(['items.inventory' => function ($query) {
-                $query->where('quantity', '>', 1);
-            }])
+        $statistics = Category::with(['items.inventory' => function ($query) {
+            $query->where('quantity', '>', 1);
+        }])
             ->get()
             ->map(function ($category) {
                 $totalQuantity = $category->items->sum(function ($item) {

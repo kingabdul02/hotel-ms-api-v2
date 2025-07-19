@@ -20,6 +20,7 @@ return new class extends Migration
             $table->foreignId('meal_plan_id')->nullable()->constrained();
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->string('reservation_code');
+            $table->bigInteger('expected_guests')->default(0);
             $table->enum('status', ['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out'])->default('pending');
             $table->timestamps();
         });

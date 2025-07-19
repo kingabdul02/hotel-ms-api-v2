@@ -118,7 +118,13 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
                 Route::get('/billing-report', [BookingController::class, 'generateBillingReport']);
 
                 Route::get('/bill/{reservation_code}', [BookingController::class, 'generateCorporateBill']);
+
+                Route::get('/{corporate_booking_id}', [BookingController::class, 'getCorporateBookingDetails']);
+
+                Route::put('/{corporate_booking_id}', [BookingController::class, 'updateCorporateBooking']);
             });
+
+            Route::post('book-room', [BookingController::class, 'bookRoom']);
         });
     });
 
