@@ -20,6 +20,8 @@ class PaymentEntryResource extends JsonResource
             'transaction_id' => $this->transaction_id,
             'payment_status' => $this->payment_status,
             'payment_date' => $this->payment_date,
+            'portal' => $this->portal,
+            'booking_type' => $this->booking_type,
         ];
     }
 }

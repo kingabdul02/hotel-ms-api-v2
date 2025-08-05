@@ -77,7 +77,7 @@ class StatisticCotroller extends Controller
         $availableRoomCount = Room::where('is_available', true)->count();
 
         // Bookings with search and filters
-        $recentBookingsQuery = Booking::with('room', 'user');
+        $recentBookingsQuery = Booking::with('room', 'user')->latest();
 
         if ($search) {
             $recentBookingsQuery->whereHas('user', function ($q) use ($search) {

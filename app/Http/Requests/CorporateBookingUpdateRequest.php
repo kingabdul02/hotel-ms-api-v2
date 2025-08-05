@@ -36,6 +36,13 @@ class CorporateBookingUpdateRequest extends FormRequest
             'guests.*.email' => 'nullable|string',
             'guests.*.phone' => 'nullable|string',
             'guests.*.room_id' => 'required|exists:rooms,id',
+            'halls' => 'nullable|array',
+            'halls.*.hall_id' => 'required_with:halls|exists:halls,id',
+            'halls.*.hall_name' => 'required_with:halls|string',
+            'halls.*.hall_price' => 'required_with:halls|numeric|min:0',
+            'halls.*.start_date' => 'required_with:halls|date',
+            'halls.*.end_date' => 'required_with:halls|date|after:halls.*.start_date',
+            'halls.*.amount' => 'required_with:halls|numeric|min:0',
         ];
 
         // Only require company details if it's a new company

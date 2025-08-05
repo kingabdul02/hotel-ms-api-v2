@@ -19,9 +19,11 @@ class CorporateBookingResource extends JsonResource
             'coordinator' => new CoordinatorResource($this->whenLoaded('coordinator')),
             'mealPlan' => new MealPlanResource($this->whenLoaded('mealPlan')),
             'guests' => CorporateBookingGuestResource::collection($this->whenLoaded('guests')),
+            'halls' => CorporateBookingHallResource::collection($this->whenLoaded('halls')),
             'check_in_date' => $this->check_in_date,
             'check_out_date' => $this->check_out_date,
             'total_cost' => $this->total_cost,
+            'payment_status' => $this->payment_status,
             'created_at' => $this->created_at->toDateTimeString(),
         ];
     }

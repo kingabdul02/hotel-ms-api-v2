@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\E_PaymentStatus;
+use App\Enums\E_Portal;
+use App\Enums\E_BookingType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +26,8 @@ class PaymentEntry extends Model
         'transaction_id',
         'payment_status',
         'payment_date',
+        'portal',
+        'booking_type',
     ];
 
     /**
@@ -37,6 +41,8 @@ class PaymentEntry extends Model
         'payment_amount' => 'float',
         'payment_date' => 'timestamp',
         'payment_status' => E_PaymentStatus::class,
+        'portal' => E_Portal::class,
+        'booking_type' => E_BookingType::class,
     ];
 
     public function booking(): BelongsTo

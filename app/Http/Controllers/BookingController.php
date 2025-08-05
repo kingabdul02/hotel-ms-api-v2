@@ -10,6 +10,7 @@ use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\PaymentEntry;
 use App\Models\Room;
+use App\Models\User;
 use App\Notifications\SuccessBooking;
 use App\Notifications\SuccessCheckIn;
 use App\Traits\JsonResponse;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Coordinator;
 use App\Models\CorporateBooking;
 use App\Models\CorporateBookingGuest;
+use App\Models\CorporateBookingHall;
 use App\Models\Company;
 use App\Http\Requests\CorporateBookingRequest;
 use App\Http\Requests\CorporateBookingUpdateRequest;
@@ -77,7 +79,10 @@ class BookingController extends Controller
             $paymentEntry->save();
 
             try {
-                $user->notify((new SuccessBooking($booking->booking_id)));
+                $authUser = User::find($user->id);
+                if ($authUser) {
+                    $authUser->notify((new SuccessBooking($booking->booking_id)));
+                }
             } catch (Exception $e) {
                 Log::alert($e);
             }
@@ -241,7 +246,8 @@ class BookingController extends Controller
                     'check_in_date' => $request->check_in_date,
                     'check_out_date' => $request->check_out_date,
                     'meal_plan_id' => $request->meal_plan_id,
-                    'reservation_code' => rand(1000, 1000000)
+                    'reservation_code' => rand(1000, 1000000),
+                    'expected_guests' => $request->expected_guests
                 ]);
 
                 foreach ($request->guests as $guest) {
@@ -255,10 +261,34 @@ class BookingController extends Controller
                     ]);
                 }
 
+                // Handle halls if provided
+                if ($request->has('halls') && is_array($request->halls)) {
+                    foreach ($request->halls as $hall) {
+                        CorporateBookingHall::create([
+                            'corporate_booking_id' => $booking->id,
+                            'hall_id' => $hall['hall_id'],
+                            'hall_name' => $hall['hall_name'],
+                            'hall_price' => $hall['hall_price'],
+                            'start_date' => $hall['start_date'],
+                            'end_date' => $hall['end_date'],
+                            'amount' => $hall['amount'],
+                        ]);
+                    }
+                }
+
                 $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
                 $mealPlan = $booking->mealPlan;
                 $mealCost = $mealPlan ? ($mealPlan->price_per_day * $nights * $booking->guests->count()) : 0;
-                $booking->update(['total_amount' => $mealCost]);
+
+                // Calculate total halls cost
+                $hallsCost = $booking->halls->sum('amount');
+
+                $roomCost = $booking->guests->sum(function ($guest) use ($nights) {
+                    return $guest->room->price * $nights;
+                });
+
+                $totalAmount = $mealCost + $hallsCost + $roomCost;
+                $booking->update(['total_amount' => $totalAmount]);
             });
 
             return $this->success('Corporate booking created successfully');
@@ -274,6 +304,14 @@ class BookingController extends Controller
 
         if ($guest->is_checked_in) {
             return $this->error('Guest already checked in', 400);
+        }
+
+        // Check and update corporate booking status if not checked in
+        $booking = $guest->corporateBooking;
+        if ($booking && $booking->status !== 'checked_in') {
+            $booking->status = 'checked_in';
+            $booking->checked_in_at = now();
+            $booking->save();
         }
 
         $guest->is_checked_in = true;
@@ -311,14 +349,14 @@ class BookingController extends Controller
     public function listCorporateBookings(Request $request)
     {
 
-        $bookings = CorporateBooking::with(['coordinator', 'guests', 'mealPlan'])->paginate(10);
+        $bookings = CorporateBooking::with(['coordinator', 'guests', 'mealPlan', 'halls'])->latest()->paginate(10);
 
         return CorporateBookingResource::collection($bookings);
     }
 
     public function generateBillingReport(Request $request)
     {
-        $query = CorporateBooking::with(['company', 'mealPlan'])
+        $query = CorporateBooking::with(['company', 'mealPlan', 'halls'])
             ->withCount('guests')
             ->when($request->filled('from'), fn($q) => $q->whereDate('created_at', '>=', $request->from))
             ->when($request->filled('to'), fn($q) => $q->whereDate('created_at', '<=', $request->to))
@@ -335,6 +373,7 @@ class BookingController extends Controller
             $nights = \Carbon\Carbon::parse($booking->check_in_date)->diffInDays($booking->check_out_date);
             $mealPlan = $booking->mealPlan;
             $mealPlanCost = $mealPlan ? $mealPlan->price_per_day * $nights * $booking->guests_count : 0;
+            $hallsCost = $booking->halls->sum('amount');
 
             return [
                 'booking_id' => $booking->id,
@@ -344,9 +383,10 @@ class BookingController extends Controller
                 'nights' => $nights,
                 'meal_plan' => optional($mealPlan)->name,
                 'meal_plan_cost' => $mealPlanCost,
+                'halls_cost' => $hallsCost,
                 'status' => $booking->status,
                 'base_booking_amount' => $booking->total_amount,
-                'total_amount_with_meals' => $booking->total_amount + $mealPlanCost,
+                'total_amount_with_meals_and_halls' => $booking->total_amount + $mealPlanCost + $hallsCost,
                 'check_in_date' => $booking->check_in_date,
                 'check_out_date' => $booking->check_out_date,
                 'created_at' => $booking->created_at->toDateTimeString(),
@@ -372,6 +412,7 @@ class BookingController extends Controller
             'coordinator',
             'mealPlan',
             'guests.room',
+            'halls',
         ])->where('reservation_code', $reservation_code)->first();
 
         if (! $booking) {
@@ -403,7 +444,19 @@ class BookingController extends Controller
             $mealPlanCost = $mealPlan->price_per_day * $nights * count($booking->guests);
         }
 
-        $total = $totalRoomCost + $mealPlanCost;
+        // Calculate halls cost
+        $hallsCost = $booking->halls->sum('amount');
+        $hallsDetails = $booking->halls->map(function ($hall) {
+            return [
+                'hall_name' => $hall->hall_name,
+                'hall_price' => $hall->hall_price,
+                'start_date' => $hall->start_date,
+                'end_date' => $hall->end_date,
+                'amount' => $hall->amount,
+            ];
+        });
+
+        $total = $totalRoomCost + $mealPlanCost + $hallsCost;
 
         return response()->json([
             'company_name' => $booking->company->name,
@@ -416,14 +469,17 @@ class BookingController extends Controller
                 'rate_per_day' => $mealPlan->price_per_day,
                 'total_meal_cost' => $mealPlanCost,
             ] : null,
+            'halls' => $hallsDetails->toArray(),
             'total_accommodation' => $totalRoomCost,
+            'total_halls_cost' => $hallsCost,
+            'payment_status' => $booking->payment_status,
             'grand_total' => $total,
         ]);
     }
 
     public function getCorporateBookingDetails($corporate_booking_id)
     {
-        $booking = CorporateBooking::with(['company', 'coordinator', 'guests.room', 'mealPlan'])
+        $booking = CorporateBooking::with(['company', 'coordinator', 'guests.room', 'mealPlan', 'halls'])
             ->findOrFail($corporate_booking_id);
 
         return new CorporateBookingResource($booking);
@@ -487,13 +543,39 @@ class BookingController extends Controller
                     ]);
                 }
 
-                $booking->expected_guests = $request->expected_guests ? $request->expected_guests : $request->guests->count();
+                // Remove old halls and re-insert new ones
+                $booking->halls()->delete();
+
+                if ($request->has('halls') && is_array($request->halls)) {
+                    foreach ($request->halls as $hall) {
+                        CorporateBookingHall::create([
+                            'corporate_booking_id' => $booking->id,
+                            'hall_id' => $hall['hall_id'],
+                            'hall_name' => $hall['hall_name'],
+                            'hall_price' => $hall['hall_price'],
+                            'start_date' => $hall['start_date'],
+                            'end_date' => $hall['end_date'],
+                            'amount' => $hall['amount'],
+                        ]);
+                    }
+                }
+
+                $booking->expected_guests = $request->expected_guests ? $request->expected_guests : count($request->guests);
 
                 // Recalculate total amount
                 $nights = Carbon::parse($booking->check_in_date)->diffInDays(Carbon::parse($booking->check_out_date));
                 $mealPlan = $booking->mealPlan()->first();
                 $mealCost = $mealPlan ? ($mealPlan->price_per_day * $nights * $booking->guests()->count()) : 0;
-                $booking->update(['total_amount' => $mealCost]);
+
+                // Calculate halls cost
+                $hallsCost = $booking->halls()->sum('amount');
+
+                $roomCost = $booking->guests->sum(function ($guest) use ($nights) {
+                    return $guest->room->price * $nights;
+                });
+
+                $totalAmount = $mealCost + $hallsCost + $roomCost;
+                $booking->update(['total_amount' => $totalAmount]);
             });
 
             return $this->success('Corporate booking updated successfully');

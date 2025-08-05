@@ -74,6 +74,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
             Route::get('payment-entry/{paymentEntry}', [PaymentEntryController::class, 'show']);
 
+            Route::post('complete-payment', [PaymentEntryController::class, 'completePayment']);
+
+            Route::post('complete-corporate-payment', [PaymentEntryController::class, 'completeCorporatePayment']);
+
             Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
 
             Route::apiResource('items', App\Http\Controllers\ItemController::class);
