@@ -31,7 +31,7 @@ class CorporateBookingGuest extends Model
 
     public function booking()
     {
-        return $this->belongsTo(CorporateBooking::class);
+        return $this->belongsTo(CorporateBooking::class, 'corporate_booking_id');
     }
 
     public function room()

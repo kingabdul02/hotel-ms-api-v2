@@ -300,19 +300,20 @@ class BookingController extends Controller
 
     public function checkInCorporateGuest($guest_id)
     {
-        $guest = CorporateBookingGuest::findOrFail($guest_id);
+        $guest = CorporateBookingGuest::with('booking')->findOrFail($guest_id);
 
         if ($guest->is_checked_in) {
             return $this->error('Guest already checked in', 400);
         }
 
         // Check and update corporate booking status if not checked in
-        $booking = $guest->corporateBooking;
-        if ($booking && $booking->status !== 'checked_in') {
-            $booking->status = 'checked_in';
-            $booking->checked_in_at = now();
-            $booking->save();
-        }
+        $booking = $guest->booking;
+
+        // if ($booking && $booking->status === 'pending') {
+        $booking->status = 'checked_in';
+        $booking->check_in_date = now();
+        $booking->save();
+        // }
 
         $guest->is_checked_in = true;
         $guest->checked_in_at = now();
@@ -346,10 +347,217 @@ class BookingController extends Controller
         return $this->success('Guest checked out successfully');
     }
 
+    public function checkInCorporateBooking($corporate_booking_id)
+    {
+        try {
+            $corporateBooking = CorporateBooking::with('guests.room')->findOrFail($corporate_booking_id);
+
+            // Check if corporate booking is already checked in
+            if ($corporateBooking->status === 'checked_in') {
+                return $this->error('Corporate booking is already checked in', 400);
+            }
+
+            // Check if corporate booking has any guests
+            if ($corporateBooking->guests->isEmpty()) {
+                return $this->error('No guests found for this corporate booking', 400);
+            }
+
+            $checkedInGuests = 0;
+            $alreadyCheckedInGuests = 0;
+            $errors = [];
+
+            DB::transaction(function () use ($corporateBooking, &$checkedInGuests, &$alreadyCheckedInGuests, &$errors) {
+                foreach ($corporateBooking->guests as $guest) {
+                    if ($guest->is_checked_in) {
+                        $alreadyCheckedInGuests++;
+                        continue;
+                    }
+
+                    try {
+                        // Check in the guest
+                        $guest->is_checked_in = true;
+                        $guest->checked_in_at = now();
+                        $guest->save();
+
+                        // Update room status
+                        if ($guest->room) {
+                            $guest->room->check_in = now();
+                            $guest->room->is_available = false;
+                            $guest->room->save();
+                        }
+
+                        $checkedInGuests++;
+                    } catch (Exception $e) {
+                        $errors[] = "Failed to check in guest {$guest->id}: " . $e->getMessage();
+                    }
+                }
+
+                // Update corporate booking status
+                $corporateBooking->status = 'checked_in';
+                $corporateBooking->check_in_date = now();
+                $corporateBooking->save();
+            });
+
+            $message = "Corporate booking checked in successfully. ";
+            $message .= "Checked in: {$checkedInGuests} guests. ";
+            if ($alreadyCheckedInGuests > 0) {
+                $message .= "Already checked in: {$alreadyCheckedInGuests} guests. ";
+            }
+            if (!empty($errors)) {
+                $message .= "Errors: " . implode(', ', $errors);
+            }
+
+            return $this->success([
+                'message' => $message,
+                'corporate_booking_id' => $corporate_booking_id,
+                'checked_in_guests' => $checkedInGuests,
+                'already_checked_in_guests' => $alreadyCheckedInGuests,
+                'errors' => $errors
+            ]);
+        } catch (Exception $e) {
+            Log::error('Corporate booking check-in failed: ' . $e->getMessage());
+            return $this->error('Failed to check in corporate booking: ' . $e->getMessage(), 400);
+        }
+    }
+
+    public function checkOutCorporateBooking($corporate_booking_id)
+    {
+        try {
+            $corporateBooking = CorporateBooking::with('guests.room')->findOrFail($corporate_booking_id);
+
+            // Check if corporate booking is already checked out
+            if ($corporateBooking->status === 'checked_out') {
+                return $this->error('Corporate booking is already checked out', 400);
+            }
+
+            // Check if corporate booking has any guests
+            if ($corporateBooking->guests->isEmpty()) {
+                return $this->error('No guests found for this corporate booking', 400);
+            }
+
+            $checkedOutGuests = 0;
+            $notCheckedInGuests = 0;
+            $alreadyCheckedOutGuests = 0;
+            $errors = [];
+
+            DB::transaction(function () use ($corporateBooking, &$checkedOutGuests, &$notCheckedInGuests, &$alreadyCheckedOutGuests, &$errors) {
+                foreach ($corporateBooking->guests as $guest) {
+                    if (!$guest->is_checked_in) {
+                        $notCheckedInGuests++;
+                        continue;
+                    }
+
+                    if ($guest->is_checked_out) {
+                        $alreadyCheckedOutGuests++;
+                        continue;
+                    }
+
+                    try {
+                        // Check out the guest
+                        $guest->is_checked_in = false;
+                        $guest->is_checked_out = true;
+                        $guest->checked_out_at = now();
+                        $guest->save();
+
+                        // Update room status
+                        if ($guest->room) {
+                            $guest->room->check_in = null;
+                            $guest->room->check_out = null;
+                            $guest->room->is_available = true;
+                            $guest->room->save();
+                        }
+
+                        $checkedOutGuests++;
+                    } catch (Exception $e) {
+                        $errors[] = "Failed to check out guest {$guest->id}: " . $e->getMessage();
+                    }
+                }
+
+                // Update corporate booking status
+                $corporateBooking->status = 'checked_out';
+                $corporateBooking->check_out_date = now();
+                $corporateBooking->save();
+            });
+
+            $message = "Corporate booking checked out successfully. ";
+            $message .= "Checked out: {$checkedOutGuests} guests. ";
+            if ($notCheckedInGuests > 0) {
+                $message .= "Not checked in: {$notCheckedInGuests} guests. ";
+            }
+            if ($alreadyCheckedOutGuests > 0) {
+                $message .= "Already checked out: {$alreadyCheckedOutGuests} guests. ";
+            }
+            if (!empty($errors)) {
+                $message .= "Errors: " . implode(', ', $errors);
+            }
+
+            return $this->success([
+                'message' => $message,
+                'corporate_booking_id' => $corporate_booking_id,
+                'checked_out_guests' => $checkedOutGuests,
+                'not_checked_in_guests' => $notCheckedInGuests,
+                'already_checked_out_guests' => $alreadyCheckedOutGuests,
+                'errors' => $errors
+            ]);
+        } catch (Exception $e) {
+            Log::error('Corporate booking check-out failed: ' . $e->getMessage());
+            return $this->error('Failed to check out corporate booking: ' . $e->getMessage(), 400);
+        }
+    }
+
     public function listCorporateBookings(Request $request)
     {
+        $query = CorporateBooking::with(['company', 'coordinator', 'guests', 'mealPlan', 'halls']);
 
-        $bookings = CorporateBooking::with(['coordinator', 'guests', 'mealPlan', 'halls'])->latest()->paginate(10);
+        // Search by company name or coordinator name
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('company', function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%");
+                })->orWhereHas('coordinator', function ($sub) use ($search) {
+                    $sub->where('full_name', 'like', "%{$search}%");
+                })->orWhere('reservation_code', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by payment_status
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        // Filter by check_in_date range
+        if ($request->filled('check_in_from')) {
+            $query->whereDate('check_in_date', '>=', $request->check_in_from);
+        }
+        if ($request->filled('check_in_to')) {
+            $query->whereDate('check_in_date', '<=', $request->check_in_to);
+        }
+
+        // Filter by check_out_date range
+        if ($request->filled('check_out_from')) {
+            $query->whereDate('check_out_date', '>=', $request->check_out_from);
+        }
+        if ($request->filled('check_out_to')) {
+            $query->whereDate('check_out_date', '<=', $request->check_out_to);
+        }
+
+        // Filter by booking created_at date range
+        if ($request->filled('booking_date_from')) {
+            $query->whereDate('created_at', '>=', $request->booking_date_from);
+        }
+        if ($request->filled('booking_date_to')) {
+            $query->whereDate('created_at', '<=', $request->booking_date_to);
+        }
+
+        $perPage = $request->get('per_page', 10);
+
+        $bookings = $query->latest()->paginate($perPage);
 
         return CorporateBookingResource::collection($bookings);
     }

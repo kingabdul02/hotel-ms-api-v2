@@ -26,8 +26,18 @@ class StatisticCotroller extends Controller
         // Search/filter inputs
         $search = $request->input('search');
         $roomTypeId = $request->input('room_type_id');
-        $checkInDate = $request->input('check_in_date');
-        $checkOutDate = $request->input('check_out_date');
+        $paymentStatus = $request->input('payment_status');
+
+        $checkInFrom = $request->input('check_in_from');
+        $checkInTo = $request->input('check_in_to');
+
+        $checkOutFrom = $request->input('check_out_from');
+        $checkOutTo = $request->input('check_out_to');
+
+        $bookingDateFrom = $request->input('booking_date_from');
+        $bookingDateTo = $request->input('booking_date_to');
+
+        $bookingStatus = $request->input('booking_status');
 
         // Revenue by room type
         $totalRevenueByRoomType = Booking::join('rooms', 'bookings.room_id', '=', 'rooms.id')
@@ -93,15 +103,43 @@ class StatisticCotroller extends Controller
             });
         }
 
-        if ($checkInDate) {
-            $recentBookingsQuery->whereDate('check_in_date', $checkInDate);
+        // NEW: Payment status filter
+        if ($paymentStatus) {
+            $recentBookingsQuery->where('payment_status', $paymentStatus);
         }
 
-        if ($checkOutDate) {
-            $recentBookingsQuery->whereDate('check_out_date', $checkOutDate);
+        // NEW: Date range filter
+        if ($checkInFrom && $checkInTo) {
+            $recentBookingsQuery->whereBetween('check_in_date', [$checkInFrom, $checkInTo]);
+        } elseif ($checkInFrom) {
+            $recentBookingsQuery->where('check_in_date', '>=', $checkInFrom);
+        } elseif ($checkInTo) {
+            $recentBookingsQuery->where('check_in_date', '<=', $checkInTo);
         }
 
-        $recentBookings = $recentBookingsQuery->orderBy('check_in_date', 'desc')->paginate(100);
+        if ($checkOutFrom && $checkOutTo) {
+            $recentBookingsQuery->whereBetween('check_out_date', [$checkOutFrom, $checkOutTo]);
+        } elseif ($checkOutFrom) {
+            $recentBookingsQuery->where('check_out_date', '>=', $checkOutFrom);
+        } elseif ($checkOutTo) {
+            $recentBookingsQuery->where('check_out_date', '<=', $checkOutTo);
+        }
+
+        if ($bookingDateFrom && $bookingDateTo) {
+            $recentBookingsQuery->whereBetween('created_at', [$bookingDateFrom, $bookingDateTo]);
+        } elseif ($bookingDateFrom) {
+            $recentBookingsQuery->where('created_at', '>=', $bookingDateFrom);
+        } elseif ($bookingDateTo) {
+            $recentBookingsQuery->where('created_at', '<=', $bookingDateTo);
+        }
+
+        if ($bookingStatus) {
+            $recentBookingsQuery->where('is_confirmed', $bookingStatus === 'is_confirmed')
+                ->orWhere('is_checked_in', $bookingStatus === 'is_checked_in')
+                ->orWhere('is_checked_out', $bookingStatus === 'is_checked_out');
+        }
+
+        $recentBookings = $recentBookingsQuery->orderBy('check_in_date', 'desc')->paginate($request->input('per_page', 10));
 
         return response()->json([
             'totalRevenueByRoomType'   => $totalRevenueByRoomType,

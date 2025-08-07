@@ -115,6 +115,10 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
 
                 Route::post('/', [BookingController::class, 'corporateBooking']);
 
+                Route::post('/{corporate_booking_id}/check-in', [BookingController::class, 'checkInCorporateBooking']);
+
+                Route::post('/{corporate_booking_id}/check-out', [BookingController::class, 'checkOutCorporateBooking']);
+
                 Route::post('/guest/{guest_id}/check-in', [BookingController::class, 'checkInCorporateGuest']);
 
                 Route::post('/guest/{guest_id}/check-out', [BookingController::class, 'checkOutCorporateGuest']);
