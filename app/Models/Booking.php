@@ -33,6 +33,8 @@ class Booking extends Model
         'booking_id',
         'guest_name',
         'is_online_booking',
+        'status',
+        'cancellation_reason',
     ];
 
     /**
@@ -70,5 +72,15 @@ class Booking extends Model
     public function room(): BelongsTo
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function charges()
+    {
+        return $this->hasMany(BookingCharge::class);
+    }
+
+    public function posCharges()
+    {
+        return $this->hasMany(POSCharge::class);
     }
 }

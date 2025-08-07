@@ -17,6 +17,37 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V2\HousekeepingController;
+use App\Http\Controllers\V1\HousekeeperController;
+use App\Http\Controllers\Api\V2\BookingController as V2BookingController;
+use App\Http\Controllers\Api\V2\DashboardController;
+use App\Http\Controllers\Api\V2\POSController;
+
+Route::group(['middleware' => 'auth:sanctum'], function () {
+    Route::prefix('v2')->group(function () {
+        // Dashboard Analytics
+        Route::get('housekeeping/housekeepers', [DashboardController::class, 'getAvailability']);
+        Route::get('dashboard/occupancy-heatmap', [DashboardController::class, 'getOccupancyHeatmap']);
+        Route::get('dashboard/revpar', [DashboardController::class, 'getRevPar']);
+
+        // Booking Management
+        Route::put('bookings/{id}/modify', [V2BookingController::class, 'modify']);
+        Route::post('bookings/{id}/charges', [V2BookingController::class, 'addCharges']);
+        Route::delete('bookings/{id}/cancel', [V2BookingController::class, 'cancel']);
+
+        // POS Integration
+        Route::get('pos/outlets', [POSController::class, 'getOutlets']);
+        Route::get('pos/items', [POSController::class, 'getItems']);
+        Route::post('pos/charges', [POSController::class, 'postCharges']);
+        Route::get('pos/bill/{bookingId}', [POSController::class, 'getBill']);
+
+        Route::get('housekeeping/rooms/status', [HousekeepingController::class, 'getRoomStatuses']);
+        Route::put('housekeeping/rooms/{id}/status', [HousekeepingController::class, 'updateRoomStatus']);
+        Route::get('housekeeping/assignments', [HousekeepingController::class, 'getAssignments']);
+        Route::post('housekeeping/assignments', [HousekeepingController::class, 'createOrUpdateAssignments']);
+        Route::get('housekeepers/available', [HousekeepingController::class, 'getAvailableHousekeepers']);
+    });
+});
 
 Route::get('/user', function (Request $request) {
     return $request->user();

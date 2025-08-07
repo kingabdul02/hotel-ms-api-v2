@@ -31,6 +31,10 @@ class Room extends Model
         'is_feature',
         'check_in',
         'check_out',
+        'status',
+        'housekeeper_id',
+        'last_cleaned_at',
+        'notes',
     ];
 
     /**
@@ -46,6 +50,7 @@ class Room extends Model
         'is_available' => 'boolean',
         'is_feature' => 'boolean',
         'has_sitting_room' => 'boolean',
+        'last_cleaned_at' => 'datetime',
     ];
 
     public function bookings(): HasMany
@@ -71,5 +76,15 @@ class Room extends Model
     public function hotel(): BelongsTo
     {
         return $this->belongsTo(Hotel::class);
+    }
+
+    public function housekeeper(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'housekeeper_id');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(HousekeeperAssignment::class);
     }
 }

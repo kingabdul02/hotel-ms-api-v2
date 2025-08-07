@@ -21,7 +21,33 @@ class RoomController extends Controller
 
     public function index(Request $request): RoomCollection
     {
-        $rooms = Room::latest()->get();
+        $query = Room::query();
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('room_type_id')) {
+            $query->where('room_type_id', $request->room_type_id);
+        }
+
+        if ($request->filled('is_available')) {
+            $query->where('is_available', $request->is_available);
+        }
+
+        if ($request->filled('no_of_guests')) {
+            $query->where('no_of_guests', '>=', $request->no_of_guests);
+        }
+
+        if ($request->filled('no_of_bedrooms')) {
+            $query->where('no_of_bedrooms', $request->no_of_bedrooms);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $rooms = $query->latest()->paginate($request->get('per_page', 15));
 
         return new RoomCollection($rooms);
     }

@@ -72,4 +72,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(SavedBooking::class);
     }
+    public function housekeeperAssignments(): HasMany
+    {
+        return $this->hasMany(HousekeeperAssignment::class, 'housekeeper_id');
+    }
 }

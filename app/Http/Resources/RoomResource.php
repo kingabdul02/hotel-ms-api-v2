@@ -26,6 +26,7 @@ class RoomResource extends JsonResource
             'is_feature' => $this->is_feature,
             'check_in' => $this->check_in,
             'check_out' => $this->check_out,
+            'status' => $this->status,
             'roomType' => new RoomTypeResource($this->roomType),
             'facilities' => FacilityCollection::make($this->whenLoaded('facilities')),
             'images' => RoomImageCollection::make($this->images),
