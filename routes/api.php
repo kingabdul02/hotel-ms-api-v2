@@ -45,7 +45,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
         Route::put('housekeeping/rooms/{id}/status', [HousekeepingController::class, 'updateRoomStatus']);
         Route::get('housekeeping/assignments', [HousekeepingController::class, 'getAssignments']);
         Route::post('housekeeping/assignments', [HousekeepingController::class, 'createOrUpdateAssignments']);
-        Route::get('housekeepers/available', [HousekeepingController::class, 'getAvailableHousekeepers']);
+        Route::get('available-housekeepers', [HousekeepingController::class, 'getAvailableHousekeepers']);
+        // New: Housekeeping stats endpoint
+        Route::get('housekeeping/stats', [HousekeepingController::class, 'getStats']);
     });
 });
 
