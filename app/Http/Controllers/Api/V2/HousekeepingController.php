@@ -218,6 +218,8 @@ class HousekeepingController extends Controller
         // support both "In-Progress" and "in_progress" just in case
         $inProgressCount = (int) (($statusCounts['In-Progress'] ?? 0) + ($statusCounts['in_progress'] ?? 0));
 
+        $maintenanceCount = (int) ($statusCounts['Maintenance'] ?? 0);
+
         $pct = function (int $count) use ($totalRooms): int {
             return $totalRooms > 0 ? (int) round(($count / $totalRooms) * 100) : 0;
         };
@@ -253,6 +255,7 @@ class HousekeepingController extends Controller
             'cleanRooms' => ['count' => $cleanCount, 'percentage' => $pct($cleanCount)],
             'dirtyRooms' => ['count' => $dirtyCount, 'percentage' => $pct($dirtyCount)],
             'inProgressRooms' => ['count' => $inProgressCount, 'percentage' => $pct($inProgressCount)],
+            'maintenanceRooms' => ['count' => $maintenanceCount, 'percentage' => $pct($maintenanceCount)],
             'activeHousekeepers' => ['active' => $activeHousekeepers, 'total' => $totalHousekeepers],
             'efficiencyRate' => ['percentage' => $effToday, 'deltaVsYesterday' => $delta],
             'asOf' => $date,
