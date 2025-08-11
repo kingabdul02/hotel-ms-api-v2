@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\E_BookingStatus;
 use App\Enums\E_PaymentStatus;
 use App\Http\Requests\BookingStoreRequest;
 use App\Http\Requests\BookingUpdateRequest;
@@ -154,6 +155,7 @@ class BookingController extends Controller
             }
 
             $booking->is_checked_in = true;
+            $booking->status = E_BookingStatus::CHECKED_IN->value;
             // if (is_null($booking->check_in_date)) {
             //     $booking->check_in_date = Carbon::now();
             // }
@@ -192,6 +194,7 @@ class BookingController extends Controller
             }
 
             $booking->is_checked_out = true;
+            $booking->status = E_BookingStatus::CHECKED_OUT->value;
             // if (is_null($booking->check_out_date)) {
             //     $booking->check_out_date = Carbon::now();
             // }
@@ -310,7 +313,7 @@ class BookingController extends Controller
         $booking = $guest->booking;
 
         // if ($booking && $booking->status === 'pending') {
-        $booking->status = 'checked_in';
+        $booking->status = E_BookingStatus::CHECKED_IN->value;
         $booking->check_in_date = now();
         $booking->save();
         // }
@@ -393,7 +396,7 @@ class BookingController extends Controller
                 }
 
                 // Update corporate booking status
-                $corporateBooking->status = 'checked_in';
+                $corporateBooking->status = E_BookingStatus::CHECKED_IN->value;
                 $corporateBooking->check_in_date = now();
                 $corporateBooking->save();
             });
@@ -474,7 +477,7 @@ class BookingController extends Controller
                 }
 
                 // Update corporate booking status
-                $corporateBooking->status = 'checked_out';
+                $corporateBooking->status = E_BookingStatus::CHECKED_OUT->value;
                 $corporateBooking->check_out_date = now();
                 $corporateBooking->save();
             });

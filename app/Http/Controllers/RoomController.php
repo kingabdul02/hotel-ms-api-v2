@@ -10,10 +10,12 @@ use App\Http\Resources\RoomResource;
 use App\Models\Room;
 use App\Models\RoomImage;
 use App\Models\RoomType;
+use App\Models\Booking;
 use App\Traits\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class RoomController extends Controller
 {
@@ -101,34 +103,65 @@ class RoomController extends Controller
     /**
      * @unauthenticated
      */
+    // public function search(RoomSearchRequest $request)
+    // {
+    //     $query = Room::where('is_available', true);
+
+    //     if ($request->filled('room_type_id')) {
+    //         $query->where('room_type_id', $request->room_type_id);
+    //     }
+
+    //     if ($request->filled('no_of_guests')) {
+    //         $query->where('no_of_guests', '<=', $request->no_of_guests);
+    //     }
+
+    //     // if ($request->filled('no_of_bedrooms')) {
+    //     //     $query->where('no_of_bedrooms', $request->no_of_bedrooms);
+    //     // }
+
+    //     if ($request->filled('check_in_date') && $request->filled('check_out_date')) {
+    //         $checkInDate = $request->check_in_date;
+    //         $checkOutDate = $request->check_out_date;
+
+    //         $query->where(function ($query) use ($checkInDate, $checkOutDate) {
+    //             $query->whereNull('check_in')
+    //                 ->whereNull('check_out')
+    //                 ->orWhere(function ($query) use ($checkInDate, $checkOutDate) {
+    //                     $query->whereNotBetween('check_in', [$checkInDate, $checkOutDate])
+    //                         ->orWhereNotBetween('check_out', [$checkInDate, $checkOutDate]);
+    //                 });
+    //         });
+    //     }
+
+    //     $rooms = $query->get();
+
+    //     return new RoomCollection($rooms);
+    // }
+
     public function search(RoomSearchRequest $request)
     {
-        $query = Room::where('is_available', true);
+        $query = Room::query(); // no pre-filter
 
+        // Filter by room type
         if ($request->filled('room_type_id')) {
             $query->where('room_type_id', $request->room_type_id);
         }
 
+        // Filter by max guests
         if ($request->filled('no_of_guests')) {
             $query->where('no_of_guests', '<=', $request->no_of_guests);
         }
 
-        // if ($request->filled('no_of_bedrooms')) {
-        //     $query->where('no_of_bedrooms', $request->no_of_bedrooms);
-        // }
-
         if ($request->filled('check_in_date') && $request->filled('check_out_date')) {
-            $checkInDate = $request->check_in_date;
-            $checkOutDate = $request->check_out_date;
+            $checkInDate = Carbon::parse($request->check_in_date)->startOfDay();
+            $checkOutDate = Carbon::parse($request->check_out_date)->startOfDay();
 
-            $query->where(function ($query) use ($checkInDate, $checkOutDate) {
-                $query->whereNull('check_in')
-                    ->whereNull('check_out')
-                    ->orWhere(function ($query) use ($checkInDate, $checkOutDate) {
-                        $query->whereNotBetween('check_in', [$checkInDate, $checkOutDate])
-                            ->orWhereNotBetween('check_out', [$checkInDate, $checkOutDate]);
-                    });
-            });
+            // Same logic as calendar: checkout is exclusive
+            $bookedRoomIds = Booking::whereDate('check_in_date', '<', $checkOutDate)
+                ->whereDate('check_out_date', '>', $checkInDate)
+                ->pluck('room_id');
+
+            $query->whereNotIn('id', $bookedRoomIds);
         }
 
         $rooms = $query->get();

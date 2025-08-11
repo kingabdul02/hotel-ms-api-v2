@@ -28,7 +28,9 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
         // Dashboard Analytics
         Route::get('housekeeping/housekeepers', [DashboardController::class, 'getAvailability']);
         Route::get('dashboard/occupancy-heatmap', [DashboardController::class, 'getOccupancyHeatmap']);
-        Route::get('dashboard/revpar', [DashboardController::class, 'getRevPar']);
+        Route::get('dashboard/revpar', [DashboardController::class, 'getRevenueStats']);
+        // Availability calendar endpoint
+        Route::get('dashboard/availability-calendar', [DashboardController::class, 'availabilityCalendar']);
 
         // Booking Management
         Route::put('bookings/{id}/modify', [V2BookingController::class, 'modify']);

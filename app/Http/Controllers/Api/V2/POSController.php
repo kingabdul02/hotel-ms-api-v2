@@ -10,6 +10,11 @@ use App\Models\Item;
 use App\Models\Outlet;
 use App\Models\POSCharge;
 use Illuminate\Support\Facades\Validator;
+use App\Models\PaymentEntry;
+use App\Enums\E_PaymentStatus;
+use App\Enums\E_Portal;
+use App\Enums\E_BookingType;
+use App\Enums\E_BookingStatus;
 
 class POSController extends Controller
 {
