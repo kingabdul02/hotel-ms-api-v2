@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('check_out_date');
             $table->text('special_requests')->nullable();
             $table->float('total_amount');
-            $table->enum('payment_status', ["pending", "paid", "cancelled", "refunded"])->default('pending');
+            $table->enum('payment_status', ["pending", "paid", "cancelled", "refunded", "partially_paid"])->default('pending');
             $table->boolean('is_confirmed')->default(true);
             $table->boolean('is_checked_in')->default(false);
             $table->boolean('is_checked_out')->default(false);

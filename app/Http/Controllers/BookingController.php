@@ -67,6 +67,8 @@ class BookingController extends Controller
             $validated['booking_id'] = rand(1000, 1000000);
             $validated['no_of_nights'] = $numberOfNights;
             $validated['total_amount'] = $numberOfNights * $room->price;
+            $validated['paid_amount'] = 0;
+            $validated['balance'] = $numberOfNights * $room->price;
 
             $booking = Booking::create($validated);
 

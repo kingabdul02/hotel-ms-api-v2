@@ -513,48 +513,74 @@ src/
 
 #### `GET /api/v2/pos/outlets`
 
-**Description:** Get available POS outlets
-**Response Example:**
+**Description:** List POS outlets with filters and pagination.
+
+**Query Parameters (all optional):**
+
+```json
+{
+    "name": "Rest", // partial match
+    "type": "restaurant", // exact match
+    "status": "active", // exact match
+    "search": "bar", // searches name/type/status
+    "page": 1,
+    "per_page": 50
+}
+```
+
+**Response Example (paginated):**
 
 ```json
 {
     "success": true,
     "data": {
-        "outlets": [
+        "current_page": 1,
+        "data": [
             {
                 "id": 1,
                 "name": "Main Restaurant",
                 "type": "restaurant",
                 "status": "active",
-                "operating_hours": {
-                    "open": "06:00",
-                    "close": "23:00"
-                }
+                "operating_hours": { "open": "06:00", "close": "23:00" }
             },
             {
                 "id": 2,
                 "name": "Pool Bar",
                 "type": "bar",
                 "status": "active",
-                "operating_hours": {
-                    "open": "10:00",
-                    "close": "22:00"
-                }
+                "operating_hours": { "open": "10:00", "close": "22:00" }
             }
-        ]
+        ],
+        "first_page_url": "...",
+        "from": 1,
+        "last_page": 1,
+        "last_page_url": "...",
+        "links": [],
+        "next_page_url": null,
+        "path": "...",
+        "per_page": 50,
+        "prev_page_url": null,
+        "to": 2,
+        "total": 2
     }
 }
 ```
 
 #### `GET /api/v2/pos/items`
 
-**Description:** Get POS items by category
+**Description:** Get POS items grouped by category for a given outlet.
+
+Notes:
+
+-   `outlet_id` is required.
+-   `category` is optional; it accepts either a category name (partial match) or a category ID.
+
 **Query Parameters:**
 
 ```json
 {
     "outlet_id": 1,
-    "category": "food"
+    "category": "Appetizers" // or an ID like 3
 }
 ```
 
@@ -629,6 +655,137 @@ src/
     }
 }
 ```
+
+#### POS Catalog Management (Outlet Items & Categories)
+
+The following endpoints allow managing outlet-specific item categories and items. All endpoints require authentication (Bearer token) and live under the `/api/v2` prefix.
+
+##### Categories
+
+-   `GET /api/v2/pos/outlet-item-categories`
+
+    -   Description: List categories. Filter with `outlet_id`.
+    -   Query Params: `{ "outlet_id": 1 }`
+    -   Response (paginated collection):
+        ```json
+        {
+            "data": [
+                { "id": 3, "name": "Appetizers" },
+                { "id": 4, "name": "Mains" }
+            ],
+            "links": {
+                "first": "...",
+                "last": "...",
+                "prev": null,
+                "next": null
+            },
+            "meta": { "current_page": 1, "per_page": 50, "total": 2 }
+        }
+        ```
+
+-   `POST /api/v2/pos/outlet-item-categories`
+
+    -   Description: Create a category for an outlet.
+    -   Body:
+        ```json
+        { "outlet_id": 1, "name": "Appetizers", "slug": "appetizers" }
+        ```
+    -   Response 201:
+        ```json
+        { "data": { "id": 10, "name": "Appetizers" } }
+        ```
+
+-   `GET /api/v2/pos/outlet-item-categories/{id}`
+
+    -   Description: Get a single category by ID.
+
+-   `PUT /api/v2/pos/outlet-item-categories/{id}`
+
+    -   Description: Update a category.
+    -   Body (any of): `{ "name": "Starters", "slug": "starters" }`
+
+-   `DELETE /api/v2/pos/outlet-item-categories/{id}`
+    -   Description: Delete a category (cascades to its items).
+
+##### Items
+
+-   `GET /api/v2/pos/outlet-items`
+
+    -   Description: List items. Filters: `outlet_id`, `category_id`.
+    -   Query Params example: `{ "outlet_id": 1, "category_id": 10 }`
+    -   Response (paginated collection of items):
+        ```json
+        {
+            "data": [
+                {
+                    "id": 101,
+                    "name": "Caesar Salad",
+                    "price": 12.5,
+                    "description": "Fresh romaine with parmesan",
+                    "available": true,
+                    "tax_rate": 8.5,
+                    "image_url": null,
+                    "sku": null,
+                    "category_id": 10,
+                    "outlet_id": 1
+                }
+            ],
+            "links": {
+                "first": "...",
+                "last": "...",
+                "prev": null,
+                "next": null
+            },
+            "meta": { "current_page": 1, "per_page": 50, "total": 1 }
+        }
+        ```
+
+-   `POST /api/v2/pos/outlet-items`
+
+    -   Description: Create an outlet item.
+    -   Body:
+        ```json
+        {
+            "outlet_id": 1,
+            "category_id": 10,
+            "name": "Caesar Salad",
+            "price": 12.5,
+            "description": "Fresh romaine with parmesan",
+            "available": true,
+            "tax_rate": 8.5,
+            "image_url": null,
+            "sku": "FOOD-CAESAR"
+        }
+        ```
+    -   Response 201:
+        ```json
+        {
+            "data": {
+                "id": 101,
+                "name": "Caesar Salad",
+                "price": 12.5,
+                "description": "Fresh romaine with parmesan",
+                "available": true,
+                "tax_rate": 8.5,
+                "image_url": null,
+                "sku": "FOOD-CAESAR",
+                "category_id": 10,
+                "outlet_id": 1
+            }
+        }
+        ```
+
+-   `GET /api/v2/pos/outlet-items/{id}`
+
+    -   Description: Fetch a single item.
+
+-   `PUT /api/v2/pos/outlet-items/{id}`
+
+    -   Description: Update an item.
+    -   Body (any of): `{ "name": "Greek Salad", "price": 11.0, "available": false }`
+
+-   `DELETE /api/v2/pos/outlet-items/{id}`
+    -   Description: Delete an item.
 
 #### `GET /api/v2/pos/bill/{bookingId}`
 

@@ -260,6 +260,12 @@ Content-Type: application/json
 Accept: application/json
 
 ###
+GET http://localhost:8000/api/v2/pos/bill/23
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer 8|TUotu4oKYjAFmwVljqMHNaQSYNirUAmbZkD8qHHdb67a85b6
+
+###
 GET http://localhost:8000/api/rooms/2
 Content-Type: application/json
 Accept: application/json

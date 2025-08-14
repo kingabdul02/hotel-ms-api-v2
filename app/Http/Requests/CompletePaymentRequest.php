@@ -24,6 +24,7 @@ class CompletePaymentRequest extends FormRequest
         return [
             'booking_id' => ['required', 'string', 'exists:bookings,booking_id'],
             'payment_method' => ['required', 'string', 'in:cash,pos,transfer'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
         ];
     }
 
@@ -39,6 +40,9 @@ class CompletePaymentRequest extends FormRequest
             'booking_id.exists' => 'The specified booking does not exist.',
             'payment_method.required' => 'Payment method is required.',
             'payment_method.in' => 'Payment method must be one of: cash, pos, transfer.',
+            'amount.required' => 'Payment amount is required.',
+            'amount.numeric' => 'Payment amount must be a number.',
+            'amount.min' => 'Payment amount must be at least 0.01.',
         ];
     }
 }

@@ -39,7 +39,7 @@ class POSCharge extends Model
 
     public function item()
     {
-        return $this->belongsTo(Item::class);
+        return $this->belongsTo(OutletItem::class, 'item_id');
     }
 
     public function server()

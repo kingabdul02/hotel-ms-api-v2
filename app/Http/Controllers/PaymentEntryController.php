@@ -154,15 +154,24 @@ class PaymentEntryController extends Controller
         }
 
         return DB::transaction(function () use ($booking, $request) {
+            $amount = (float) $request->input('amount');
+
             // Update room availability
             $booking->room->is_available = false;
             $booking->room->check_in = $booking->check_in_date;
             $booking->room->check_out = $booking->check_out_date;
             $booking->room->save();
 
-            // Update booking status
+            // Update booking payments (aggregate with existing payments)
             $booking->is_confirmed = true;
-            $booking->payment_status = E_PaymentStatus::PAID;
+            $currentPaid = (float) ($booking->paid_amount ?? 0);
+            $currentTotal = (float) ($booking->total_amount ?? 0);
+            $newPaid = $currentPaid + $amount;
+            $isFullyPaid = $newPaid >= $currentTotal;
+
+            $booking->paid_amount = $newPaid;
+            $booking->payment_status = $isFullyPaid ? E_PaymentStatus::PAID : E_PaymentStatus::PARTIALLY_PAID;
+            $booking->balance = max($currentTotal - $newPaid, 0);
             $booking->save();
 
             if (!$booking->paymentEntry) {
@@ -181,8 +190,9 @@ class PaymentEntryController extends Controller
             // Update payment entry
             $paymentEntry = $booking->paymentEntry;
             $paymentEntry->payment_date = now();
-            $paymentEntry->payment_status = E_PaymentStatus::SUCCESSFUL;
             $paymentEntry->payment_method = $paymentMethod;
+            $paymentEntry->payment_status = $isFullyPaid ? E_PaymentStatus::SUCCESSFUL : E_PaymentStatus::PARTIALLY_PAID;
+            $paymentEntry->payment_amount = $amount;
             $paymentEntry->booking_type = E_BookingType::INDIVIDUAL;
             $paymentEntry->portal = E_Portal::ASSISTED;
             $paymentEntry->save();
@@ -192,7 +202,7 @@ class PaymentEntryController extends Controller
             $transaction->payment_provider = 'admin';
             $transaction->transaction = time();
             $transaction->reference = 'ADMIN_' . time() . '_' . $booking->booking_id;
-            $transaction->amount = $paymentEntry->payment_amount;
+            $transaction->amount = $amount;
             $transaction->status = 'success';
             $transaction->message = 'Payment completed by admin using ' . $request->payment_method;
             $transaction->payment_date = now();
