@@ -27,6 +27,9 @@ class BookingStoreRequest extends FormRequest
             'special_requests' => ['nullable', 'string'],
             'no_of_guests' => ['required', 'integer', 'min:1'],
             'is_online_booking' => ['nullable', 'boolean'],
+            // Optional discount fields from the frontend payload
+            'discount_type' => ['nullable', 'in:percent,amount'],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

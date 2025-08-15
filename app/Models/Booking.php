@@ -37,6 +37,9 @@ class Booking extends Model
         'is_online_booking',
         'status',
         'cancellation_reason',
+        // discount metadata
+        'discount_type',
+        'discount_value',
     ];
 
     /**
@@ -56,6 +59,7 @@ class Booking extends Model
         'is_confirmed' => 'boolean',
         'is_checked_in' => 'boolean',
         'is_checked_out' => 'boolean',
+        'discount_value' => 'float',
     ];
 
     public function paymentEntry(): HasOne

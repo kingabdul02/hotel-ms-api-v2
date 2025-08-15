@@ -66,9 +66,40 @@ class BookingController extends Controller
             $validated['user_id'] = $user->id;
             $validated['booking_id'] = rand(1000, 1000000);
             $validated['no_of_nights'] = $numberOfNights;
-            $validated['total_amount'] = $numberOfNights * $room->price;
+
+            // Base total before discounts
+            $baseTotal = $numberOfNights * $room->price;
+
+            // Compute discount if provided
+            $discountType = $request->input('discount_type');
+            $discountValue = (float) $request->input('discount_value', 0);
+
+            $discountAmount = 0.0;
+            if ($discountType && $discountValue > 0) {
+                if ($discountType === 'percent') {
+                    // Treat values > 100 as 100%; clamp to [0,100]
+                    $percent = max(0, min(100, $discountValue));
+                    $discountAmount = round(($percent / 100) * $baseTotal, 2);
+                } elseif ($discountType === 'amount') {
+                    $discountAmount = round($discountValue, 2);
+                }
+            }
+
+            // Final totals after discount, not below zero
+            $totalAfterDiscount = max(0, round($baseTotal - $discountAmount, 2));
+
+            $validated['total_amount'] = $totalAfterDiscount;
             $validated['paid_amount'] = 0;
-            $validated['balance'] = $numberOfNights * $room->price;
+            $validated['balance'] = $totalAfterDiscount;
+
+            // Persist discount metadata if the Booking model allows it in fillable
+            // (Even if not, they will be ignored; keeping here for potential later migration)
+            if ($discountType) {
+                $validated['discount_type'] = $discountType;
+            }
+            if ($discountValue) {
+                $validated['discount_value'] = $discountValue;
+            }
 
             $booking = Booking::create($validated);
 

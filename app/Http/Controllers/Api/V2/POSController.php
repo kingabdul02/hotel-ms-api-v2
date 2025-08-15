@@ -269,7 +269,22 @@ class POSController extends Controller
 
         $subtotal = $accommodationSubtotal + $roomChargesSubtotal + $posSubtotal;
         $tax = $accommodationTax + $roomChargesTax + $posTax;
-        $total = $subtotal + $tax;
+
+        // Apply booking-level discount (applies to accommodation portion only)
+        $discountAmount = 0.0;
+        $discountType = $booking->discount_type;
+        $discountValue = (float) ($booking->discount_value ?? 0);
+        if ($discountType && $discountValue > 0) {
+            if ($discountType === 'percent') {
+                $percent = max(0, min(100, $discountValue));
+                $discountAmount = round(($percent / 100) * $accommodationSubtotal, 2);
+            } elseif ($discountType === 'amount') {
+                $discountAmount = round(min($discountValue, $accommodationSubtotal), 2);
+            }
+        }
+
+        $totalBeforeDiscount = $subtotal + $tax;
+        $total = max($totalBeforeDiscount - $discountAmount, 0.0);
 
         // Payments
         $paid = (float) ($booking->paid_amount ?? 0.0);
@@ -307,6 +322,9 @@ class POSController extends Controller
                     "is_online_booking" => $booking->is_online_booking,
                     "status" =>  $booking->status,
                     "cancellation_reason" =>  $booking->cancellation_reason,
+                    // Expose discount metadata for UI
+                    "discount_type" => $booking->discount_type,
+                    "discount_value" => $booking->discount_value,
                     "created_at" =>  $booking->created_at,
                     "updated_at" =>  $booking->updated_at,
                 ],
@@ -325,6 +343,7 @@ class POSController extends Controller
                 'totals' => [
                     'subtotal' => $subtotal,
                     'tax' => $tax,
+                    'discount' => $discountAmount,
                     'total' => $total,
                     'paid' => $paid,
                     'balance' => $balance,
