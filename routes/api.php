@@ -57,6 +57,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
         Route::get('available-housekeepers', [HousekeepingController::class, 'getAvailableHousekeepers']);
         // New: Housekeeping stats endpoint
         Route::get('housekeeping/stats', [HousekeepingController::class, 'getStats']);
+
+        // Corporate Booking Charges
+        Route::get('corporate-bookings/{id}/charges', [\App\Http\Controllers\Api\V2\CorporateBookingChargeController::class, 'index']);
+        Route::post('corporate-bookings/{id}/charges', [\App\Http\Controllers\Api\V2\CorporateBookingChargeController::class, 'store']);
+
+        // Corporate POS Charges
+        Route::get('corporate-bookings/{id}/pos-charges', [\App\Http\Controllers\Api\V2\CorporatePOSChargeController::class, 'index']);
+        Route::post('corporate-bookings/{id}/pos-charges', [\App\Http\Controllers\Api\V2\CorporatePOSChargeController::class, 'store']);
     });
 });
 

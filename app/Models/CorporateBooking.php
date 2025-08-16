@@ -55,4 +55,14 @@ class CorporateBooking extends Model
     {
         return $this->hasMany(CorporateBookingHall::class);
     }
+
+    public function charges()
+    {
+        return $this->hasMany(CorporateBookingCharge::class);
+    }
+
+    public function posCharges()
+    {
+        return $this->hasMany(CorporatePOSCharge::class);
+    }
 }

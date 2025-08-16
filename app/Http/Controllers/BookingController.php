@@ -657,6 +657,9 @@ class BookingController extends Controller
             'mealPlan',
             'guests.room',
             'halls',
+            'posCharges.item',
+            'posCharges.outlet',
+            'charges',
         ])->where('reservation_code', $reservation_code)->first();
 
         if (! $booking) {
@@ -700,7 +703,48 @@ class BookingController extends Controller
             ];
         });
 
-        $total = $totalRoomCost + $mealPlanCost + $hallsCost;
+        // POS charges (posted from outlets)
+        $posCharges = [];
+        $posTotal = 0;
+        foreach ($booking->posCharges as $pc) {
+            $unit = $pc->unit_price ?? ($pc->item->price ?? 0);
+            $qty = $pc->quantity ?? 1;
+            $lineTotal = round($unit * $qty, 2);
+            $posTotal += $lineTotal;
+
+            $posCharges[] = [
+                'id' => $pc->id,
+                'outlet' => $pc->outlet->name ?? null,
+                'item' => $pc->item->name ?? null,
+                'unit_price' => (float) $unit,
+                'quantity' => (int) $qty,
+                'total' => $lineTotal,
+                'notes' => $pc->notes,
+                'posted_at' => $pc->created_at->toDateTimeString(),
+            ];
+        }
+
+        // Custom booking charges (manual charges/fees)
+        $customCharges = [];
+        $customTotal = 0;
+        foreach ($booking->charges as $bc) {
+            $qty = $bc->quantity ?? 1;
+            $unit = $bc->amount ?? 0; // treat amount as unit price
+            $lineTotal = round($unit * $qty, 2);
+            $customTotal += $lineTotal;
+
+            $customCharges[] = [
+                'id' => $bc->id,
+                'description' => $bc->description,
+                'category' => $bc->category,
+                'unit_price' => (float) $unit,
+                'quantity' => (int) $qty,
+                'total' => $lineTotal,
+                'tax_rate' => $bc->tax_rate,
+            ];
+        }
+
+        $total = $totalRoomCost + $mealPlanCost + $hallsCost + $posTotal + $customTotal;
 
         return response()->json([
             'company_name' => $booking->company->name,
@@ -716,6 +760,10 @@ class BookingController extends Controller
             'halls' => $hallsDetails->toArray(),
             'total_accommodation' => $totalRoomCost,
             'total_halls_cost' => $hallsCost,
+            'pos_charges' => $posCharges,
+            'pos_charges_total' => round($posTotal, 2),
+            'custom_charges' => $customCharges,
+            'custom_charges_total' => round($customTotal, 2),
             'payment_status' => $booking->payment_status,
             'grand_total' => $total,
         ]);
