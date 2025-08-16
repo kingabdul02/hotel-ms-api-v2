@@ -38,12 +38,14 @@ Route::group(['middleware' => 'auth:sanctum'], function () {
         Route::delete('bookings/{id}/cancel', [V2BookingController::class, 'cancel']);
 
         // POS Integration
-        Route::get('pos/outlets', [POSController::class, 'getOutlets']);
+        Route::get('pos-outlets', [POSController::class, 'getOutlets']);
         // POS Items: use query params ?outlet_id=&category=
         Route::get('pos/items', [POSController::class, 'getItems']);
         Route::post('pos/charges', [POSController::class, 'postCharges']);
         Route::get('pos/bill/{bookingId}', [POSController::class, 'getBill']);
 
+        // POS Outlet Management (Outlets)
+        Route::apiResource('pos/outlets', App\Http\Controllers\Api\V2\OutletController::class);
         // POS Outlet Items Management
         Route::apiResource('pos/outlet-item-categories', App\Http\Controllers\Api\V2\OutletItemCategoryController::class);
         Route::apiResource('pos/outlet-items', App\Http\Controllers\Api\V2\OutletItemController::class);

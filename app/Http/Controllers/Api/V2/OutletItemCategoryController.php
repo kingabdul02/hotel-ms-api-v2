@@ -12,7 +12,7 @@ class OutletItemCategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = OutletItemCategory::query()
+        $query = OutletItemCategory::with('outlet')
             ->when($request->filled('outlet_id'), fn($q) => $q->where('outlet_id', $request->integer('outlet_id')))
             ->orderBy('name');
 

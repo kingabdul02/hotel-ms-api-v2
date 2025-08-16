@@ -17,6 +17,8 @@ class OutletItemCategoryResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'slug' => $this->slug,
+            'outlet' => new OutletResource($this->whenLoaded('outlet')),
             'items' => OutletItemResource::collection($this->whenLoaded('items')),
         ];
     }

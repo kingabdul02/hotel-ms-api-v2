@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             RoomTypeSeeder::class,
             RoomSeeder::class,
             GeneralSettingsSeeder::class,
+            OutletSeeder::class,
             CategorySeeder::class,
             ItemSeeder::class,
             SupplierSeeder::class,
